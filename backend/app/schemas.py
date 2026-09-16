@@ -1,0 +1,72 @@
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+from app.models import AppointmentStatus, SlotStatus
+
+
+class DoctorOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    specialty: str
+    bio: str
+    experience_years: int
+    consultation_duration_minutes: int
+
+
+class DoctorWithNextSlot(DoctorOut):
+    next_available_slot: datetime | None = None
+
+
+class SlotOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    doctor_id: int
+    start_datetime: datetime
+    end_datetime: datetime
+    status: SlotStatus
+    recommended: bool = False
+
+
+class PatientOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    email: str
+    phone: str
+
+
+class PatientCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    email: EmailStr
+    phone: str = ""
+
+
+class AppointmentCreate(BaseModel):
+    slot_id: int
+    patient_id: int
+    reason: str = ""
+
+
+class AppointmentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    slot_id: int
+    patient_id: int
+    doctor_id: int
+    status: AppointmentStatus
+    reason: str
+    created_at: datetime
+    cancelled_at: datetime | None
+    slot: SlotOut
+    doctor: DoctorOut
+    patient: PatientOut
+
+
+class AppointmentStatusUpdate(BaseModel):
+    status: AppointmentStatus
