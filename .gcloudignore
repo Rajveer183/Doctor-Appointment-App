@@ -1,0 +1,23 @@
+.git/
+.gitignore
+
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+*.db
+*.db-shm
+*.db-wal
+
+node_modules/
+dist/
+.vite/
+
+.env
+.env.*
+!.env.example
+
+# NOTE: chroma_data/ is deliberately NOT ignored — `gcloud builds submit ./backend` must
+# upload it so the Dockerfile can COPY it into the image.

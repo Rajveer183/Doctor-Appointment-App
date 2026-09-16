@@ -5,6 +5,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     database_url: str = "sqlite+aiosqlite:///./appointments.db"
+    # Comma-separated list of browser origins allowed to call this API.
+    # Set to the deployed frontend URL on Cloud Run (see commands.md step 9).
+    frontend_origin: str = "http://localhost:5173"
     nvidia_api_key: str = ""
     nvidia_chat_model: str = "nvidia/nemotron-3-super-120b-a12b"
     nvidia_embed_model: str = "nvidia/nemotron-3-embed-1b"
@@ -18,6 +21,10 @@ class Settings(BaseSettings):
     embedding_similarity_threshold: float = 0.45
     fuzzy_match_threshold: int = 85
     cancellation_window_minutes: int = 60
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [o.strip() for o in self.frontend_origin.split(",") if o.strip()]
 
 
 settings = Settings()

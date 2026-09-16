@@ -1,0 +1,15 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+tests/
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.*
+!.env.example
+
+# NOTE: chroma_data/ is deliberately NOT ignored — the Dockerfile bakes the taxonomy
+# index into the image. It is gitignored, so it must exist locally before you build.
