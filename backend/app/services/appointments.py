@@ -52,6 +52,10 @@ async def book_appointment(db: AsyncSession, slot_id: int, patient_id: int, reas
     return result.scalar_one()
 
 
+async def get_appointment(db: AsyncSession, appointment_id: int) -> Appointment:
+    return await _get_appointment(db, appointment_id)
+
+
 async def _get_appointment(db: AsyncSession, appointment_id: int) -> Appointment:
     result = await db.execute(
         select(Appointment).where(Appointment.id == appointment_id).options(*_WITH_RELATIONS)

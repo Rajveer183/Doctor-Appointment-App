@@ -13,6 +13,11 @@ async def create_appointment(payload: AppointmentCreate, db: AsyncSession = Depe
     return await appointments_service.book_appointment(db, payload.slot_id, payload.patient_id, payload.reason)
 
 
+@router.get("/appointments/{appointment_id}", response_model=AppointmentOut)
+async def get_appointment(appointment_id: int, db: AsyncSession = Depends(get_db)):
+    return await appointments_service.get_appointment(db, appointment_id)
+
+
 @router.patch("/appointments/{appointment_id}/cancel", response_model=AppointmentOut)
 async def cancel_appointment(appointment_id: int, db: AsyncSession = Depends(get_db)):
     """Patient-facing cancel — rejected inside the cancellation window."""
