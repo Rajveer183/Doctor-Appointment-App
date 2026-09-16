@@ -70,3 +70,15 @@ class AppointmentOut(BaseModel):
 
 class AppointmentStatusUpdate(BaseModel):
     status: AppointmentStatus
+
+
+class SymptomSearchRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=500)
+
+
+class SymptomSearchResponse(BaseModel):
+    emergency: bool
+    specialty: str | None
+    source: str
+    message: str | None
+    matched_phrase: str | None = None

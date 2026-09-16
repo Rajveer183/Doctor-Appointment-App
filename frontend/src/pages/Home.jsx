@@ -77,7 +77,16 @@ export default function Home() {
 }
 
 function SearchResult({ result, onBrowse }) {
-  if (result.match === null) {
+  if (result.emergency) {
+    return (
+      <div className="animate-slide-up mx-auto mt-5 max-w-lg rounded-lg border-2 border-red-300 bg-red-50 px-4 py-4 text-left shadow-lg">
+        <span className="text-xs font-bold uppercase tracking-wide text-red-700">⚠ Possible emergency</span>
+        <p className="mt-1 text-sm font-medium text-red-800">{result.message}</p>
+      </div>
+    )
+  }
+
+  if (!result.specialty) {
     return (
       <div className="animate-slide-up mx-auto mt-5 max-w-lg rounded-lg bg-white/10 px-4 py-3 text-sm text-white">
         <p>{result.message || "We couldn't confidently match that — browse specialties below instead."}</p>

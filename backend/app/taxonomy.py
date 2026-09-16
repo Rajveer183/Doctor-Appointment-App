@@ -6,30 +6,28 @@ collection). Keep phrases short and colloquial (how a patient would type
 them), not clinical terms a patient wouldn't use.
 """
 
-EMERGENCY_KEYWORDS = [
-    "chest pain and breathless",
-    "chest pain and shortness of breath",
-    "crushing chest pain",
-    "can't breathe",
-    "cant breathe",
-    "severe bleeding",
-    "heavy bleeding won't stop",
-    "unconscious",
-    "not responding",
-    "unresponsive",
-    "suicidal",
-    "want to kill myself",
-    "want to end my life",
-    "seizure",
-    "stroke symptoms",
-    "face drooping",
-    "slurred speech",
-    "severe allergic reaction",
-    "throat closing up",
-    "overdose",
-    "severe burns",
-    "coughing blood",
-    "vomiting blood",
+Rule = dict[str, list[str]]
+
+# Each rule fires if the input fuzzy-matches (via partial_ratio) *every* alternative-group it
+# lists. A single-item rule ("any" of one group) covers standalone red flags — "seizure" or
+# "unconscious" alone is unambiguous. A multi-group rule requires all groups present, for
+# symptoms that are only alarming in combination: "chest pain" alone is too common (could be
+# a muscle strain) to trigger an ER redirect by itself, but "chest pain" + "can't breathe"
+# together is a textbook heart-attack/PE presentation.
+EMERGENCY_RULES: list[Rule] = [
+    {"unconsciousness": ["unconscious", "not responding", "unresponsive"]},
+    {"suicidal": ["suicidal", "want to kill myself", "want to end my life"]},
+    {"seizure": ["seizure", "convulsions", "convulsing"]},
+    {"bleeding": ["severe bleeding", "heavy bleeding that won't stop"]},
+    {"overdose": ["overdose", "took too many pills"]},
+    {"allergic reaction": ["severe allergic reaction", "throat closing up", "throat is closing"]},
+    {"burns": ["severe burns"]},
+    {"coughing/vomiting blood": ["coughing blood", "vomiting blood"]},
+    {"stroke signs": ["stroke symptoms", "face drooping", "slurred speech", "sudden numbness one side"]},
+    {
+        "chest pain": ["chest pain", "chest tightness", "crushing chest pain"],
+        "breathing difficulty": ["can't breathe", "cant breathe", "breathless", "shortness of breath"],
+    },
 ]
 
 SYMPTOM_TAXONOMY: dict[str, list[str]] = {
