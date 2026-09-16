@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.errors import AppError
-from app.routers import appointments, dashboard, doctors, patients, symptom_search
+from app.routers import appointments, chat, dashboard, doctors, patients, symptom_search
 
 app = FastAPI(title="Doctor Appointment Booking API")
 
@@ -26,6 +26,7 @@ app.include_router(patients.router, prefix="/api")
 app.include_router(appointments.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
 app.include_router(symptom_search.router, prefix="/api")
+app.include_router(chat.router, prefix="/api")
 
 
 @app.get("/api/health")

@@ -82,3 +82,25 @@ class SymptomSearchResponse(BaseModel):
     source: str
     message: str | None
     matched_phrase: str | None = None
+
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+
+class ChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=1000)
+    conversation_history: list[ChatMessage] = Field(default_factory=list)
+    patient_id: int
+
+
+class ToolEventOut(BaseModel):
+    tool: str
+    arguments: dict
+    result: dict | list
+
+
+class ChatResponse(BaseModel):
+    reply: str
+    tool_events: list[ToolEventOut] = Field(default_factory=list)

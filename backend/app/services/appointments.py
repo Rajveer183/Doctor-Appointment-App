@@ -36,6 +36,26 @@ async def book_appointment(db: AsyncSession, slot_id: int, patient_id: int, reas
     if slot.status != SlotStatus.open:
         raise ConflictError(f"Slot {slot_id} is no longer available")
 
+    # A patient can't be in two places at once — block overlap against *any* doctor's
+    # confirmed appointment, not just this one. There's no UNIQUE constraint that can
+    # express "no overlapping time range", so this relies entirely on the BEGIN IMMEDIATE
+    # transaction lock above for race-safety: two concurrent booking requests for the same
+    # patient serialize instead of both passing this check before either commits.
+    overlap_stmt = (
+        select(Appointment)
+        .join(Slot, Appointment.slot_id == Slot.id)
+        .where(
+            Appointment.patient_id == patient_id,
+            Appointment.status == AppointmentStatus.confirmed,
+            Slot.start_datetime < slot.end_datetime,
+            Slot.end_datetime > slot.start_datetime,
+        )
+    )
+    conflicting = (await db.execute(overlap_stmt)).scalars().first()
+    if conflicting:
+        with_whom = "this doctor" if conflicting.doctor_id == slot.doctor_id else "another doctor"
+        raise ConflictError(f"You already have an appointment with {with_whom} that overlaps with this time slot.")
+
     appointment = Appointment(slot_id=slot_id, patient_id=patient_id, doctor_id=slot.doctor_id, reason=reason)
     slot.status = SlotStatus.booked
     db.add(appointment)

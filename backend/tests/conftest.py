@@ -54,7 +54,11 @@ async def client_with_seed():
                 name="Dr. Test", specialty="General Physician", bio="",
                 experience_years=1, consultation_duration_minutes=30,
             )
-            db.add(doctor)
+            doctor2 = Doctor(
+                name="Dr. Second", specialty="Cardiology", bio="",
+                experience_years=1, consultation_duration_minutes=30,
+            )
+            db.add_all([doctor, doctor2])
             await db.flush()
 
             patient_a = Patient(name="Patient A", email="patient.a@example.com", phone="1")
@@ -64,14 +68,27 @@ async def client_with_seed():
 
             start = utc_now() + timedelta(days=1)
             slot = Slot(doctor_id=doctor.id, start_datetime=start, end_datetime=start + timedelta(minutes=30), status=SlotStatus.open)
-            db.add(slot)
+            # Overlaps `slot` in time, but with a different doctor.
+            overlapping_slot = Slot(
+                doctor_id=doctor2.id, start_datetime=start + timedelta(minutes=15),
+                end_datetime=start + timedelta(minutes=45), status=SlotStatus.open,
+            )
+            # Same doctor as `slot`, but the next day — no overlap.
+            non_overlapping_slot = Slot(
+                doctor_id=doctor.id, start_datetime=start + timedelta(days=1),
+                end_datetime=start + timedelta(days=1, minutes=30), status=SlotStatus.open,
+            )
+            db.add_all([slot, overlapping_slot, non_overlapping_slot])
             await db.commit()
 
             ids = {
                 "doctor_id": doctor.id,
+                "doctor2_id": doctor2.id,
                 "patient_a": patient_a.id,
                 "patient_b": patient_b.id,
                 "slot_id": slot.id,
+                "overlapping_slot_id": overlapping_slot.id,
+                "non_overlapping_slot_id": non_overlapping_slot.id,
             }
 
         transport = ASGITransport(app=app)
