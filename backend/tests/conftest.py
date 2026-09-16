@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from app.database import Base, get_db
 from app.main import app
 from app.models import Doctor, Patient, Slot, SlotStatus
-from app.utils import utc_now
+from app.utils import local_now
 
 
 def _apply_sqlite_pragmas(engine):
@@ -66,7 +66,7 @@ async def client_with_seed():
             db.add_all([patient_a, patient_b])
             await db.flush()
 
-            start = utc_now() + timedelta(days=1)
+            start = local_now() + timedelta(days=1)
             slot = Slot(doctor_id=doctor.id, start_datetime=start, end_datetime=start + timedelta(minutes=30), status=SlotStatus.open)
             # Overlaps `slot` in time, but with a different doctor.
             overlapping_slot = Slot(
@@ -79,12 +79,25 @@ async def client_with_seed():
                 end_datetime=start + timedelta(days=1, minutes=30), status=SlotStatus.open,
             )
             # Starts soon — inside the cancellation window.
-            near_start = utc_now() + timedelta(minutes=30)
+            near_start = local_now() + timedelta(minutes=30)
             near_slot = Slot(
                 doctor_id=doctor.id, start_datetime=near_start,
                 end_datetime=near_start + timedelta(minutes=30), status=SlotStatus.open,
             )
-            db.add_all([slot, overlapping_slot, non_overlapping_slot, near_slot])
+            # Same doctor, same calendar day as `slot`, but a non-overlapping time later
+            # that day — for the "one visit per doctor per day" rule.
+            same_day_slot = Slot(
+                doctor_id=doctor.id, start_datetime=start + timedelta(hours=3),
+                end_datetime=start + timedelta(hours=3, minutes=30), status=SlotStatus.open,
+            )
+            # A second, independent Slot row for the *same* doctor at the exact same time
+            # as `slot`. The schedule generator would never produce this, but nothing at
+            # the DB layer forbids it either — this exists to exercise the explicit
+            # doctor-double-booked-by-different-patients safeguard directly.
+            doctor_duplicate_time_slot = Slot(
+                doctor_id=doctor.id, start_datetime=start, end_datetime=start + timedelta(minutes=30), status=SlotStatus.open,
+            )
+            db.add_all([slot, overlapping_slot, non_overlapping_slot, near_slot, same_day_slot, doctor_duplicate_time_slot])
             await db.commit()
 
             ids = {
@@ -96,6 +109,8 @@ async def client_with_seed():
                 "overlapping_slot_id": overlapping_slot.id,
                 "non_overlapping_slot_id": non_overlapping_slot.id,
                 "near_slot_id": near_slot.id,
+                "same_day_slot_id": same_day_slot.id,
+                "doctor_duplicate_time_slot_id": doctor_duplicate_time_slot.id,
             }
 
         transport = ASGITransport(app=app)

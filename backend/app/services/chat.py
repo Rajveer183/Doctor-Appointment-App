@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.chat_tools import TOOLS, execute_tool
 from app.services.nvidia_client import NvidiaAPIError, chat_completion
 from app.services.symptom_match import match_symptom
-from app.utils import utc_now
+from app.utils import local_now
 
 MAX_TOOL_ITERATIONS = 5
 
@@ -62,7 +62,7 @@ async def run_chat(db: AsyncSession, patient_id: int, message: str, history: lis
     # around by a jailbreak-y prompt, because it never lets the model attempt a tool
     # call in the first place.
     emergency = await match_symptom(message)
-    system_content = SYSTEM_PROMPT + f"\n\nToday's date is {utc_now().date().isoformat()}."
+    system_content = SYSTEM_PROMPT + f"\n\nToday's date is {local_now().date().isoformat()}."
     if emergency.emergency:
         system_content += EMERGENCY_OVERRIDE_NOTICE
 

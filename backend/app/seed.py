@@ -7,7 +7,7 @@ from datetime import date, datetime, time, timedelta
 
 from app.database import Base, SessionLocal, engine
 from app.models import Appointment, AppointmentStatus, Doctor, DoctorAvailability, Patient, Slot, SlotStatus
-from app.utils import utc_now
+from app.utils import local_now
 
 DOCTORS = [
     dict(name="Dr. Ananya Rao", specialty="Cardiology", experience_years=12,
@@ -85,7 +85,7 @@ async def seed() -> None:
         db.add_all(all_slots)
         await db.flush()
 
-        now = utc_now()
+        now = local_now()
         past_slots = [s for s in all_slots if s.end_datetime < now]
         future_slots = [s for s in all_slots if s.start_datetime > now + timedelta(hours=2)]
 
@@ -109,7 +109,7 @@ async def seed() -> None:
             db.add(Appointment(
                 slot_id=slot.id, patient_id=patient.id, doctor_id=slot.doctor_id,
                 status=AppointmentStatus.confirmed, reason=reasons[i % len(reasons)],
-                created_at=utc_now() - timedelta(hours=i + 1),
+                created_at=local_now() - timedelta(hours=i + 1),
             ))
 
         # A couple of blocked slots (doctor unavailable), independent of bookings.

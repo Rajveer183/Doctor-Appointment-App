@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Appointment, AppointmentStatus, Slot, SlotStatus
-from app.utils import utc_now
+from app.utils import local_now
 
 
 def _time_bucket(dt: datetime) -> str:
@@ -44,7 +44,7 @@ async def get_available_slots(
 ) -> list[dict]:
     stmt = select(Slot).where(Slot.doctor_id == doctor_id)
     if only_open:
-        stmt = stmt.where(Slot.status == SlotStatus.open, Slot.start_datetime > utc_now())
+        stmt = stmt.where(Slot.status == SlotStatus.open, Slot.start_datetime > local_now())
     if day:
         start = datetime.combine(day, datetime.min.time())
         stmt = stmt.where(Slot.start_datetime >= start, Slot.start_datetime < start + timedelta(days=1))

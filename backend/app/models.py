@@ -14,7 +14,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-from app.utils import utc_now
+from app.utils import local_now
 
 
 class SlotStatus(str, enum.Enum):
@@ -104,7 +104,7 @@ class Appointment(Base):
         Enum(AppointmentStatus), default=AppointmentStatus.confirmed, nullable=False, index=True
     )
     reason: Mapped[str] = mapped_column(Text, default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=local_now)
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     slot: Mapped["Slot"] = relationship(back_populates="appointment")

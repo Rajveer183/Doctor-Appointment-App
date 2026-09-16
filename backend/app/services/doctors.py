@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.errors import NotFoundError
 from app.models import Doctor, Slot, SlotStatus
-from app.utils import utc_now
+from app.utils import local_now
 
 
 async def list_doctors(db: AsyncSession, specialty: str | None = None) -> list[dict]:
@@ -14,7 +14,7 @@ async def list_doctors(db: AsyncSession, specialty: str | None = None) -> list[d
 
     next_slot_stmt = (
         select(Slot.doctor_id, func.min(Slot.start_datetime))
-        .where(Slot.status == SlotStatus.open, Slot.start_datetime > utc_now())
+        .where(Slot.status == SlotStatus.open, Slot.start_datetime > local_now())
         .group_by(Slot.doctor_id)
     )
     next_slot_by_doctor = {row[0]: row[1] for row in (await db.execute(next_slot_stmt)).all()}
