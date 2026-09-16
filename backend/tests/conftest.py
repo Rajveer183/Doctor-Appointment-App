@@ -78,7 +78,13 @@ async def client_with_seed():
                 doctor_id=doctor.id, start_datetime=start + timedelta(days=1),
                 end_datetime=start + timedelta(days=1, minutes=30), status=SlotStatus.open,
             )
-            db.add_all([slot, overlapping_slot, non_overlapping_slot])
+            # Starts soon — inside the cancellation window.
+            near_start = utc_now() + timedelta(minutes=30)
+            near_slot = Slot(
+                doctor_id=doctor.id, start_datetime=near_start,
+                end_datetime=near_start + timedelta(minutes=30), status=SlotStatus.open,
+            )
+            db.add_all([slot, overlapping_slot, non_overlapping_slot, near_slot])
             await db.commit()
 
             ids = {
@@ -89,6 +95,7 @@ async def client_with_seed():
                 "slot_id": slot.id,
                 "overlapping_slot_id": overlapping_slot.id,
                 "non_overlapping_slot_id": non_overlapping_slot.id,
+                "near_slot_id": near_slot.id,
             }
 
         transport = ASGITransport(app=app)
