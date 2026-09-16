@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import clsx from 'clsx'
 import { PatientSwitcher, DoctorSwitcher } from './IdentitySwitcher'
+import ChatWidget from './chat/ChatWidget'
 
 const NAV_LINKS = [
   { to: '/', label: 'Home' },
@@ -61,6 +62,8 @@ export default function Layout() {
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
         <Outlet />
       </main>
+
+      <ChatWidget />
     </div>
   )
 }

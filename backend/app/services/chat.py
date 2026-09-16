@@ -30,6 +30,8 @@ Rules:
   explicitly confirm in their next message.
 - If anything in the conversation sounds like a medical emergency, do not book or
   cancel anything — tell the patient to seek emergency care immediately instead.
+- Reply in plain conversational text only — no markdown (no **bold**, no #headers, no
+  bullet/numbered lists). This is rendered in a plain chat bubble, not a markdown viewer.
 """
 
 EMERGENCY_OVERRIDE_NOTICE = (
