@@ -1,19 +1,15 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { NavLink, Outlet } from 'react-router-dom'
 import clsx from 'clsx'
-import { PatientSwitcher, DoctorSwitcher } from './IdentitySwitcher'
+import { PatientSwitcher } from './IdentitySwitcher'
 import ChatWidget from './chat/ChatWidget'
 
 const NAV_LINKS = [
   { to: '/', label: 'Home' },
   { to: '/doctors', label: 'Find a Doctor' },
   { to: '/appointments', label: 'My Appointments' },
-  { to: '/dashboard', label: 'Doctor Dashboard' },
 ]
 
 export default function Layout() {
-  const location = useLocation()
-  const isDashboard = location.pathname.startsWith('/dashboard')
-
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
@@ -38,7 +34,7 @@ export default function Layout() {
             ))}
           </nav>
           <div className="flex items-center gap-2">
-            {isDashboard ? <DoctorSwitcher /> : <PatientSwitcher />}
+            <PatientSwitcher />
           </div>
         </div>
         <nav className="flex gap-1 overflow-x-auto border-t border-slate-100 px-4 py-2 sm:hidden">

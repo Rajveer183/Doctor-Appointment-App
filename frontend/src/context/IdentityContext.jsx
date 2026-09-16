@@ -13,7 +13,6 @@ function readStored(key) {
 
 export function IdentityProvider({ children }) {
   const [patientId, setPatientIdState] = useState(() => readStored('patientId'))
-  const [doctorId, setDoctorIdState] = useState(() => readStored('doctorId'))
 
   useEffect(() => {
     try {
@@ -23,18 +22,8 @@ export function IdentityProvider({ children }) {
     }
   }, [patientId])
 
-  useEffect(() => {
-    try {
-      if (doctorId) localStorage.setItem('doctorId', String(doctorId))
-    } catch {
-      /* same as above */
-    }
-  }, [doctorId])
-
   return (
-    <IdentityContext.Provider
-      value={{ patientId, setPatientId: setPatientIdState, doctorId, setDoctorId: setDoctorIdState }}
-    >
+    <IdentityContext.Provider value={{ patientId, setPatientId: setPatientIdState }}>
       {children}
     </IdentityContext.Provider>
   )

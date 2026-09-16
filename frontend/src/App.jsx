@@ -5,7 +5,6 @@ import DoctorListing from './pages/DoctorListing'
 import DoctorDetail from './pages/DoctorDetail'
 import BookingConfirmation from './pages/BookingConfirmation'
 import MyAppointments from './pages/MyAppointments'
-import DoctorDashboard from './pages/DoctorDashboard'
 
 export default function App() {
   return (
@@ -16,7 +15,6 @@ export default function App() {
         <Route path="/doctors/:doctorId" element={<DoctorDetail />} />
         <Route path="/appointments/confirmation/:appointmentId" element={<BookingConfirmation />} />
         <Route path="/appointments" element={<MyAppointments />} />
-        <Route path="/dashboard" element={<DoctorDashboard />} />
       </Route>
     </Routes>
   )

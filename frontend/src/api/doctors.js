@@ -21,8 +21,3 @@ export async function fetchDoctorSlots(doctorId, { date, patientId } = {}) {
   })
   return data
 }
-
-export async function fetchDoctorSchedule(doctorId, date) {
-  const { data } = await apiClient.get(`/doctors/${doctorId}/schedule`, { params: { day: date } })
-  return data
-}
