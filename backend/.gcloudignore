@@ -1,0 +1,16 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+tests/
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.*
+!.env.example
+.git/
+
+# chroma_data/ is intentionally NOT ignored — the Dockerfile bakes the taxonomy
+# index into the image (see backend/Dockerfile and commands.md step 2/5).

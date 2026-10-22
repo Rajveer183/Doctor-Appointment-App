@@ -47,7 +47,7 @@ clinic-local slot timestamps that `seed.py` writes — a deliberate single-clini
 documented in the docstring. Containers run in UTC by default. Deploy without pinning the
 timezone and every "is this slot in the past" check, every next-available-slot lookup and
 the whole cancellation window shift by 5h30m in IST — silently, with no error. `TZ` is set
-in `backend/Dockerfile` and again on the service in step 8. Change the clinic's timezone in
+in `backend/Dockerfile` and again on the service in step 7. Change the clinic's timezone in
 both places, or not at all.
 
 **3. The Chroma taxonomy index has to be baked into the image.** `app/chroma_client.py`
@@ -61,20 +61,19 @@ Dockerfile copies it in.
 **4. Nothing in the repo creates the SQL schema.** `app/main.py` never calls `create_all`,
 and the only place that does is `app/seed.py`, which runs `drop_all()` first.
 `backend/scripts/create_tables.py` is a non-destructive `create_all` that runs as a Cloud
-Run Job in step 7. That is not migrations — see "Next steps".
+Run Job in step 6. That is not migrations — see "Next steps".
 
 **5. The frontend is the untouched Vite scaffold.** `src/App.jsx` is still the counter and
-the Vite/React logo links. Steps 9–10 build and deploy it correctly, and what they put on
+the Vite/React logo links. Steps 8–9 build and deploy it correctly, and what they put on
 the internet is the starter page. Skip them until there's a real UI if you prefer —
-steps 1–8 stand alone and give you a working API.
+steps 1–7 stand alone and give you a working API.
 
 ---
 
 ## 0. Prerequisites
 
 - [`gcloud` CLI](https://cloud.google.com/sdk/docs/install), authenticated: `gcloud auth login`
-- Docker Desktop — for the local validation pass in step 3, and required for the frontend
-  image build in step 9 (which needs `--build-arg`)
+- Docker Desktop — required for the frontend image build in step 8 (which needs `--build-arg`)
 - Python 3.12+ and Node.js 20+
 - An NVIDIA NIM API key: https://build.nvidia.com/
 - The Cloud SQL Auth Proxy, if you want to reach the production DB from your machine
@@ -159,54 +158,7 @@ recalibrating — fix it here, because in production the same condition is silen
 
 ---
 
-## 3. Local Docker validation (do this before touching GCP)
-
-### Backend
-
-```bash
-docker build -t appt-backend:local ./backend
-
-docker run --rm -p 8080:8080 --name appt-backend-test \
-  -e DATABASE_URL="sqlite+aiosqlite:////tmp/appointments.db" \
-  -e FRONTEND_ORIGIN="http://localhost:8081" \
-  -e NVIDIA_API_KEY="$NVIDIA_API_KEY" \
-  appt-backend:local
-```
-
-In another terminal — the container starts with an empty database, so create the schema
-inside it first:
-
-```bash
-docker exec appt-backend-test python -m scripts.create_tables
-curl http://localhost:8080/api/health
-curl http://localhost:8080/api/specialties     # [] until seeded, but must return 200
-
-# confirm TZ and the baked index both survived the build
-docker exec appt-backend-test date
-docker exec appt-backend-test python -c \
-  "from app.chroma_client import get_taxonomy_collection as c; print('taxonomy phrases:', c().count())"
-
-docker stop appt-backend-test
-```
-
-`date` must print IST, and the phrase count must be non-zero. A zero count here means
-`chroma_data/` didn't make it into the image — check that `backend/.dockerignore` still
-doesn't list it.
-
-### Frontend
-
-```bash
-docker build --build-arg VITE_API_URL=http://localhost:8080 \
-  -t appt-frontend:local ./frontend
-
-docker run --rm -p 8081:8080 --name appt-frontend-test appt-frontend:local
-curl http://localhost:8081/healthz
-docker stop appt-frontend-test
-```
-
----
-
-## 4. One-time GCP project setup
+## 3. One-time GCP project setup
 
 ```bash
 gcloud services enable \
@@ -226,7 +178,7 @@ gcloud auth configure-docker ${REGION}-docker.pkg.dev
 
 ---
 
-## 5. Cloud SQL and secrets
+## 4. Cloud SQL and secrets
 
 ```bash
 gcloud sql instances create $SQL_INSTANCE \
@@ -283,7 +235,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
 ---
 
-## 6. Build and push the backend image
+## 5. Build and push the backend image
 
 ```bash
 gcloud builds submit \
@@ -297,7 +249,7 @@ Build context is `./backend`. `backend/chroma_data/` must exist locally at this 
 
 ---
 
-## 7. Create the schema (Cloud Run Job)
+## 6. Create the schema (Cloud Run Job)
 
 Run this **before** the service, so the first request doesn't hit missing tables.
 
@@ -349,7 +301,7 @@ nothing regenerates them. Roughly two weeks later the booking API goes empty —
 
 ---
 
-## 8. Deploy the backend to Cloud Run
+## 7. Deploy the backend to Cloud Run
 
 ```bash
 gcloud run deploy $BACKEND_SVC \
@@ -388,7 +340,7 @@ Why these flags, tied to the actual code:
 - `--min-instances 0` — cold start is the Python process plus the Chroma index load.
   Set to `1` if first-request latency on `/api/symptom-search` bothers you.
 - `--port 8080` matches `PORT` in the Dockerfile.
-- `FRONTEND_ORIGIN` is a placeholder until step 9.
+- `FRONTEND_ORIGIN` is a placeholder until step 8.
 
 ```bash
 export BACKEND_URL=$(gcloud run services describe $BACKEND_SVC --region $REGION \
@@ -404,7 +356,7 @@ connection rather than the container.
 
 ---
 
-## 9. Build and deploy the frontend
+## 8. Build and deploy the frontend
 
 `gcloud builds submit --tag` doesn't accept `--build-arg`, and this build needs
 `VITE_API_URL`:
@@ -447,7 +399,7 @@ gcloud run services update $BACKEND_SVC \
 
 ---
 
-## 10. Verify end to end
+## 9. Verify end to end
 
 ```bash
 curl $BACKEND_URL/api/health
@@ -585,19 +537,19 @@ gcloud secrets versions access latest --secret=DATABASE_URL    # if you lost the
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Every endpoint 500s, `/api/health` is fine | tables never created | run the step-7 job; `/api/health` doesn't touch the DB |
+| Every endpoint 500s, `/api/health` is fine | tables never created | run the step-6 job; `/api/health` doesn't touch the DB |
 | `relation "doctors" does not exist` | same as above | same as above |
 | Slot times are off by exactly 5h30m | `TZ` not set on the service or job | `--set-env-vars="TZ=Asia/Kolkata"`; `app/utils.py` uses naive local time by design |
 | "No slots available" for a day that should have them | same timezone drift, seen through the past-slot filter | as above |
-| `/api/symptom-search` always returns `"source":"none"` or `"exact"`, never `"embedding"` | `chroma_data/` empty in the image | run `python -m app.embed_taxonomy`, rebuild; verify with the `count()` check in step 3 |
+| `/api/symptom-search` always returns `"source":"none"` or `"exact"`, never `"embedding"` | `chroma_data/` empty in the image | run `python -m app.embed_taxonomy`, rebuild; the paraphrase check in step 2 catches this locally, the one in step 9 catches it in production |
 | `docker build` fails on `COPY chroma_data` | directory doesn't exist locally | it's gitignored — build it in step 2 |
 | `/api/chat` 502s | `NVIDIA_API_KEY` secret missing or NIM rate-limiting | check `--set-secrets`; `nvidia_client` raises `NvidiaAPIError`, now mapped to 502 with a log line |
 | `/api/chat` times out | tool-calling loop exceeding the service timeout | `--timeout 300`; also check the 30s per-call timeout in `nvidia_client._client()` |
 | Container killed mid-request, no error | memory limit too low for Chroma | `--memory 2Gi` |
-| `InvalidPasswordError` / auth failed | `DATABASE_URL` secret with an unescaped password | recreate from step 5 verbatim; don't rebuild the URL by hand |
-| `connection refused` on `/cloudsql/...` | `--set-cloudsql-instances` missing or SA lacks `roles/cloudsql.client` | re-run both from step 5, redeploy |
+| `InvalidPasswordError` / auth failed | `DATABASE_URL` secret with an unescaped password | recreate from step 4 verbatim; don't rebuild the URL by hand |
+| `connection refused` on `/cloudsql/...` | `--set-cloudsql-instances` missing or SA lacks `roles/cloudsql.client` | re-run both from step 4, redeploy |
 | `sorry, too many clients already` | instances × `pool_size` over the tier's limit | lower `--max-instances` or `pool_size`, or raise the tier |
-| CORS error in the browser console | `FRONTEND_ORIGIN` still the placeholder | re-run the update at the end of step 9 |
+| CORS error in the browser console | `FRONTEND_ORIGIN` still the placeholder | re-run the update at the end of step 8 |
 | Frontend calls `localhost:8000` in production | image built without `--build-arg VITE_API_URL` | rebuild and repush; the value is inlined at build time |
 | nginx exits immediately | a `proxy_pass` to a `backend` hostname | Cloud Run services don't share a network namespace; `frontend/nginx.conf` is static-only for this reason |
 | Cancel then rebook returns 409 | `UniqueConstraint("slot_id")` counts cancelled rows | see "Required before real traffic" |
@@ -626,7 +578,7 @@ grows.
 
 - **Migrations.** `scripts/create_tables.py` is `create_all`: it adds missing tables and
   ignores existing ones, and will not alter a column you change. Add Alembic before the
-  schema changes under real data, and swap the step-7 job's args to
+  schema changes under real data, and swap the step-6 job's args to
   `alembic,upgrade,head`.
 - **Slot generation.** `DoctorAvailability` is seeded and never read by anything. Slots
   exist only in the window `app/seed.py` hardcodes. A Cloud Scheduler → Cloud Run Job that
